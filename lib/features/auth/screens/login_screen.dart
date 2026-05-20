@@ -16,13 +16,15 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _loginController = TextEditingController(text: 'Admin');
-  final _passwordController = TextEditingController(text: '123456');
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
   bool _loading = false;
+  bool _rememberMe = false;
+  bool _googleLoading = false;
 
   @override
   void dispose() {
-    _loginController.dispose();
+    _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
@@ -33,7 +35,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
     try {
       final res = await AuthService.login(
-        _loginController.text.trim(),
+        _emailController.text.trim(),
         _passwordController.text,
       );
       if (!mounted) return;
@@ -46,11 +48,30 @@ class _LoginScreenState extends State<LoginScreen> {
         return;
       }
 
-      _showMessage(res['message']?.toString() ?? 'Login failed');
+      _showMessage(res['message']?.toString() ?? 'ເຂົ້າລະບົບບໍ່ສຳເລັດ');
     } catch (e) {
-      if (mounted) _showMessage('Cannot connect to the server');
+      if (mounted) _showMessage('ບໍ່ສາມາດເຊື່ອມຕໍ່ເຊີບເວີໄດ້');
     } finally {
       if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  Future<void> _googleSignIn() async {
+    if (_googleLoading) return;
+    setState(() => _googleLoading = true);
+    try {
+      final res = await AuthService.googleLogin();
+      if (!mounted) return;
+      if (res['success'] == true) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const HomeScreen()),
+        );
+        return;
+      }
+      _showMessage(res['message']?.toString() ?? 'Google Sign-In ລົ້ມເຫລວ');
+    } finally {
+      if (mounted) setState(() => _googleLoading = false);
     }
   }
 
@@ -67,7 +88,7 @@ class _LoginScreenState extends State<LoginScreen> {
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
             child: Container(
               constraints: const BoxConstraints(maxWidth: 450),
               padding: const EdgeInsets.all(32),
@@ -76,7 +97,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 borderRadius: BorderRadius.circular(24),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.06),
+                    color: Colors.black.withOpacity(0.07),
                     blurRadius: 30,
                     offset: const Offset(0, 12),
                   ),
@@ -88,86 +109,167 @@ class _LoginScreenState extends State<LoginScreen> {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    const Icon(
-                      Icons.pets_rounded,
-                      color: AppColors.primary,
-                      size: 52,
-                    ),
-                    const SizedBox(height: 18),
                     const Text(
-                      'Login',
+                      'ຍິນດີຕ້ອນຮັບ',
                       textAlign: TextAlign.center,
                       style: AppTextStyles.heading1,
                     ),
                     const SizedBox(height: 8),
                     const Text(
-                      'Use your email or username to access the booking system.',
+                      'ກະລຸນາເຂົ້າສູ່ລະບົບເພື່ອໃຊ້ງານລະບົບການຈອງ',
                       textAlign: TextAlign.center,
                       style: AppTextStyles.bodyText,
                     ),
                     const SizedBox(height: 32),
-                    const Text('Email or username', style: AppTextStyles.label),
+                    const Text('ອີ-ເມວ ຫຼື ຊື່ຜູ້ໃຊ້', style: AppTextStyles.label),
                     const SizedBox(height: 8),
                     CustomTextField(
-                      controller: _loginController,
-                      hintText: 'Admin',
-                      prefixIcon: Icons.person_outline,
+                      controller: _emailController,
+                      hintText: 'example@email.com',
+                      prefixIcon: Icons.email_outlined,
                       keyboardType: TextInputType.emailAddress,
                       textInputAction: TextInputAction.next,
                       validator: (value) {
                         if (value == null || value.trim().isEmpty) {
-                          return 'Please enter email or username';
+                          return 'ກະລຸນາປ້ອນອີ-ເມວ ຫຼື ຊື່ຜູ້ໃຊ້';
                         }
                         return null;
                       },
                     ),
                     const SizedBox(height: 20),
-                    const Text('Password', style: AppTextStyles.label),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text('ລະຫັດຜ່ານ', style: AppTextStyles.label),
+                        TextButton(
+                          onPressed: () {},
+                          style: TextButton.styleFrom(
+                            padding: EdgeInsets.zero,
+                            minimumSize: Size.zero,
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          ),
+                          child: const Text(
+                            'ລືມລະຫັດ?',
+                            style: TextStyle(
+                              color: AppColors.secondary,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                     const SizedBox(height: 8),
                     CustomTextField(
                       controller: _passwordController,
-                      hintText: '123456',
+                      hintText: '••••••••',
                       prefixIcon: Icons.lock_outline,
                       isPassword: true,
                       textInputAction: TextInputAction.done,
                       onSubmitted: (_) => _submit(),
                       validator: (value) {
                         if (value == null || value.isEmpty) {
-                          return 'Please enter password';
+                          return 'ກະລຸນາປ້ອນລະຫັດຜ່ານ';
                         }
                         return null;
                       },
                     ),
-                    const SizedBox(height: 28),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        SizedBox(
+                          width: 24,
+                          height: 24,
+                          child: Checkbox(
+                            value: _rememberMe,
+                            onChanged: (v) =>
+                                setState(() => _rememberMe = v ?? false),
+                            activeColor: AppColors.primary,
+                            materialTapTargetSize:
+                                MaterialTapTargetSize.shrinkWrap,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        const Text(
+                          'ຈົດຈໍາການເຂົ້າສູ່ລະບົບ',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 24),
                     SizedBox(
-                      height: 54,
-                      child: ElevatedButton.icon(
+                      height: 52,
+                      child: ElevatedButton(
                         onPressed: _loading ? null : _submit,
-                        icon: _loading
-                            ? const SizedBox(
-                                width: 18,
-                                height: 18,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: Colors.white,
-                                ),
-                              )
-                            : const Icon(Icons.login_rounded),
-                        label: Text(_loading ? 'Logging in...' : 'Login'),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.primary,
                           foregroundColor: Colors.white,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(14),
                           ),
+                          elevation: 0,
                         ),
+                        child: _loading
+                            ? const SizedBox(
+                                width: 22,
+                                height: 22,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
+                              )
+                            : const Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Text(
+                                    'ເຂົ້າສູ່ລະບົບ',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  SizedBox(width: 8),
+                                  Icon(Icons.arrow_forward_rounded, size: 18),
+                                ],
+                              ),
                       ),
                     ),
-                    const SizedBox(height: 22),
+                    const SizedBox(height: 24),
+                    Row(
+                      children: [
+                        const Expanded(child: Divider(color: Color(0xFFE0E0E0))),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                          child: Text(
+                            'ຫຼືເຂົ້າສູ່ລະບົບດ້ວຍ',
+                            style: AppTextStyles.bodyText.copyWith(fontSize: 13),
+                          ),
+                        ),
+                        const Expanded(child: Divider(color: Color(0xFFE0E0E0))),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    _GoogleSignInButton(
+                      loading: _googleLoading,
+                      onTap: _googleSignIn,
+                    ),
+                    const SizedBox(height: 24),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Flexible(child: Text('No account yet?')),
+                        const Text(
+                          'ຍັງບໍ່ມີບັນຊີ?',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
                         TextButton(
                           onPressed: _loading
                               ? null
@@ -179,7 +281,14 @@ class _LoginScreenState extends State<LoginScreen> {
                                     ),
                                   );
                                 },
-                          child: const Text('Register'),
+                          child: const Text(
+                            'ລົງທະບຽນໃໝ່',
+                            style: TextStyle(
+                              color: AppColors.primary,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 14,
+                            ),
+                          ),
                         ),
                       ],
                     ),
@@ -192,4 +301,93 @@ class _LoginScreenState extends State<LoginScreen> {
       ),
     );
   }
+}
+
+class _GoogleSignInButton extends StatelessWidget {
+  final VoidCallback onTap;
+  final bool loading;
+
+  const _GoogleSignInButton({required this.onTap, required this.loading});
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(12),
+      elevation: 1.5,
+      shadowColor: Colors.black26,
+      child: InkWell(
+        onTap: loading ? null : onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 13),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              if (loading)
+                const SizedBox(
+                  width: 22,
+                  height: 22,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              else
+                const SizedBox(
+                  width: 22,
+                  height: 22,
+                  child: CustomPaint(painter: _GoogleGPainter()),
+                ),
+              const SizedBox(width: 12),
+              const Text(
+                'ດໍາເນີນການດ້ວຍ Google',
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w500,
+                  color: Color(0xFF3C4043),
+                  letterSpacing: 0.1,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _GoogleGPainter extends CustomPainter {
+  const _GoogleGPainter();
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final strokeW = size.width * 0.14;
+    final r = size.width / 2 - strokeW / 2;
+    final c = Offset(size.width / 2, size.height / 2);
+    final rect = Rect.fromCircle(center: c, radius: r);
+
+    Paint arc(Color color) => Paint()
+      ..color = color
+      ..strokeWidth = strokeW
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.butt;
+
+    // Gap ±25° (0.44 rad) ຢູ່ດ້ານຂວາ (0 rad = 3 o'clock)
+    // ວຽນຕາມໂມງ: Green → Yellow → Red → Blue
+    canvas.drawArc(rect, 0.44, 0.54, false, arc(const Color(0xFF34A853)));
+    canvas.drawArc(rect, 0.98, 0.32, false, arc(const Color(0xFFFBBC05)));
+    canvas.drawArc(rect, 1.30, 1.46, false, arc(const Color(0xFFEA4335)));
+    canvas.drawArc(rect, 2.76, 3.08, false, arc(const Color(0xFF4285F4)));
+
+    // ຂີດຕາມແນວນອນ (crossbar ຂອງ G)
+    canvas.drawLine(
+      Offset(c.dx, c.dy),
+      Offset(c.dx + r + strokeW / 2, c.dy),
+      Paint()
+        ..color = const Color(0xFF4285F4)
+        ..strokeWidth = strokeW
+        ..strokeCap = StrokeCap.square,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

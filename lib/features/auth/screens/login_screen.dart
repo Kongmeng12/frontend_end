@@ -5,10 +5,12 @@ import '../../../core/constants/app_text_styles.dart';
 import '../../../core/widgets/custom_text_field.dart';
 import '../../../services/auth_service.dart';
 import '../../home/screens/home_screen.dart';
+import 'forgot_password_screen.dart';
 import 'register_screen.dart';
 
 class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
+  final String? expiredMessage;
+  const LoginScreen({super.key, this.expiredMessage});
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();
@@ -19,8 +21,17 @@ class _LoginScreenState extends State<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _loading = false;
-  bool _rememberMe = false;
   bool _googleLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.expiredMessage != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _showMessage(widget.expiredMessage!);
+      });
+    }
+  }
 
   @override
   void dispose() {
@@ -73,6 +84,13 @@ class _LoginScreenState extends State<LoginScreen> {
     } finally {
       if (mounted) setState(() => _googleLoading = false);
     }
+  }
+
+  void _showForgotPassword() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const ForgotPasswordScreen()),
+    );
   }
 
   void _showMessage(String message) {
@@ -142,7 +160,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       children: [
                         const Text('ລະຫັດຜ່ານ', style: AppTextStyles.label),
                         TextButton(
-                          onPressed: () {},
+                          onPressed: _showForgotPassword,
                           style: TextButton.styleFrom(
                             padding: EdgeInsets.zero,
                             minimumSize: Size.zero,
@@ -173,34 +191,6 @@ class _LoginScreenState extends State<LoginScreen> {
                         }
                         return null;
                       },
-                    ),
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        SizedBox(
-                          width: 24,
-                          height: 24,
-                          child: Checkbox(
-                            value: _rememberMe,
-                            onChanged: (v) =>
-                                setState(() => _rememberMe = v ?? false),
-                            activeColor: AppColors.primary,
-                            materialTapTargetSize:
-                                MaterialTapTargetSize.shrinkWrap,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        const Text(
-                          'ຈົດຈໍາການເຂົ້າສູ່ລະບົບ',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: AppColors.textSecondary,
-                          ),
-                        ),
-                      ],
                     ),
                     const SizedBox(height: 24),
                     SizedBox(

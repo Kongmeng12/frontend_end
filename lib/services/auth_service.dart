@@ -1,6 +1,7 @@
 import 'package:google_sign_in/google_sign_in.dart';
 import 'api_service.dart';
 import 'auth_storage.dart';
+import 'fcm_service.dart';
 
 class AuthService {
   static final _googleSignIn = GoogleSignIn(
@@ -17,6 +18,8 @@ class AuthService {
       await AuthStorage.saveToken(res['token']);
       final user = res['user'];
       if (user is Map<String, dynamic>) await AuthStorage.saveUser(user);
+      // ລົງທະບຽນ FCM token ຫຼັງ login ສຳເລັດ
+      FcmService.register();
     }
     return res;
   }
@@ -53,8 +56,34 @@ class AuthService {
     }
   }
 
+  static Future<Map<String, dynamic>> forgotPassword(String email) async {
+    return await ApiService.post('/api/forgot-password', {'email': email});
+  }
+
+  static Future<Map<String, dynamic>> resetPassword({
+    required String email,
+    required String otp,
+    required String newPassword,
+  }) async {
+    return await ApiService.post('/api/reset-password', {
+      'email': email,
+      'otp': otp,
+      'newPassword': newPassword,
+    });
+  }
+
+  static Future<bool> verifyToken() async {
+    final token = await AuthStorage.getToken();
+    if (token == null || token.isEmpty) return false;
+    final res = await ApiService.get('/api/me');
+    return res['success'] == true;
+  }
+
   static Future<void> logout() async {
-    await _googleSignIn.signOut();
+    await FcmService.unregister(); // ລຶບ token ກ່ອນ logout
+    try {
+      await _googleSignIn.signOut();
+    } catch (_) {}
     await AuthStorage.clearToken();
   }
 }

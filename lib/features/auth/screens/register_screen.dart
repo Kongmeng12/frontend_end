@@ -17,6 +17,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
+  final _phoneController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
   bool _loading = false;
@@ -26,6 +27,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   void dispose() {
     _nameController.dispose();
     _emailController.dispose();
+    _phoneController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
     super.dispose();
@@ -40,6 +42,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
         'name': _nameController.text.trim(),
         'email': _emailController.text.trim(),
         'password': _passwordController.text,
+        if (_phoneController.text.trim().isNotEmpty)
+          'phone': _phoneController.text.trim(),
       });
       if (!mounted) return;
 
@@ -157,6 +161,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         }
                         return null;
                       },
+                    ),
+                    const SizedBox(height: 18),
+                    const Text('ເບີໂທລະສັບ', style: AppTextStyles.label),
+                    const SizedBox(height: 8),
+                    CustomTextField(
+                      controller: _phoneController,
+                      hintText: '020xxxxxxxx (ບໍ່ບັງຄັບ)',
+                      prefixIcon: Icons.phone_outlined,
+                      keyboardType: TextInputType.phone,
+                      textInputAction: TextInputAction.next,
                     ),
                     const SizedBox(height: 18),
                     const Text('ລະຫັດຜ່ານ', style: AppTextStyles.label),

@@ -1,8 +1,8 @@
 import 'api_service.dart';
 
 class AnimalService {
-  static Future<Map<String, dynamic>> getByUser(int userId) async =>
-      await ApiService.get('/api/users/$userId/animals');
+  static Future<Map<String, dynamic>> getAll() async =>
+      await ApiService.get('/api/animals');
 
   static Future<Map<String, dynamic>> getById(int id) async =>
       await ApiService.get('/api/animals/$id');
